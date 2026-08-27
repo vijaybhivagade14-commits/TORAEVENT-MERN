@@ -8,8 +8,8 @@ exports.getAllEvents = async (req, res) => {
             filters.category = req.query.category;
         }
         if (req.query.ticketPrice) {
-            // const priceRange = req.query.ticketPrice.split("-");
-            filters.price = { $gte: parseFloat(priceRange[0]), $lte: parseFloat(priceRange[1]) };
+            const priceRange = req.query.ticketPrice.split("-");
+            filters.ticketPrice = { $gte: parseFloat(priceRange[0]), $lte: parseFloat(priceRange[1]) };
         }
 
         const events = await Event.find(filters);
@@ -38,7 +38,7 @@ exports.createEvent = async (req, res) => {
     const { title, description, date, time, location, category, totalSeats, ticketPrice, imageUrl } = req.body;
 
     try {
-        const event = await Event.findByIdAndUpdate(req.params.id, {
+        const event = await Event.create(req.params.id, {
 
             title,
             description,
@@ -50,16 +50,15 @@ exports.createEvent = async (req, res) => {
             ticketPrice,
             imageUrl,
             createdBy: req.user._id
-        }, { new: true});
-        if(!event) {
-            return res.status(404).json({ error: "Event not found" });
-        }
-        
+        } )
         res.status(201).json(event);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-};
+        
+}
+        
+
 
 exports.updateEvent = async (req, res) => {
     const { title, description, date, time, location, category, totalSeats, ticketPrice, imageUrl } = req.body;

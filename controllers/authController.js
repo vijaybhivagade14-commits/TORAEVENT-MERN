@@ -14,7 +14,7 @@ const generateToken = (id, role) => {
 
 exports.registerUser = async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password } = req.body || {};
 
         if (!name || !email || !password) {
             return res.status(400).json({ error: "Name, email and password are required" });
@@ -49,67 +49,84 @@ exports.registerUser = async (req, res) => {
 };
 
 //Login User
-exports.loginUser = async (req, res) => {   
-    const { email, password } = req.body;
+exports.loginUser = async (req, res) => {
+    try {
+        const { email, password } = req.body;
 
-    let user = await User.findOne({ email });
-    if (!user) {
-        return res.status(400).json({ error: "Invalid email or password" });
+        if (!email || !password) {
+            return res.status(400).json({ error: "Email and password are required" });
+        }
+
+        let user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ error: "Invalid email or password" });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ error: "Invalid email or password" });
+        }
+
+        if (!user.isVerified && user.role === 'user') {
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            await OTP.deleteMany({ email, action: 'account-verification' });
+            await OTP.create({ email, otp, action: 'account-verification' });
+            await sendOtpEmail(email, otp, 'account-verification');
+            return res.status(400).json({
+                error: 'Account not verified. OTP sent to email for verification.',
+            });
+        }
+
+        res.status(200).json({
+            message: 'Login successful',
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                token: generateToken(user._id, user.role)
+            }
+        });
+    } catch (error) {
+        console.error("Login error:", error);
+        res.status(500).json({ error: "Internal server error" });
     }
+};
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-        return res.status(400).json({ error: "Invalid email or password" });
-    }
+exports.verifyOtp = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
 
-    if (!user.isVerified && user.role === 'user') {
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        await OTP.deleteMany({ email, action: 'account-verification' }); // Delete any existing OTPs for this email
-        await OTP.create({ email, otp, action: 'account-verification' });
-        await sendOtpEmail(email, otp, 'account-verification'); // Send OTP email to the user
-        return res.status(400).json({
-            error: 'Account not verified. OTP sent to email for verification.',
-        })
-    }
+        if (!email || !otp) {
+            return res.status(400).json({ error: "Email and OTP are required" });
+        }
 
+        const otpRecord = await OTP.findOne({ email, otp, action: 'account-verification' });
 
+        if (!otpRecord) {
+            return res.status(400).json({ error: "Invalid or expired OTP" });
+        }
 
+        const user = await User.findOneAndUpdate(
+            { email },
+            { isVerified: true },
+            { new: true }
+        );
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
 
-    res.status(200).json({ 
-        message: 'Login successful', 
-        user: {
+        await OTP.deleteMany({ email, action: 'account-verification' });
+        res.json({
+            message: 'Account verified successfully',
             _id: user._id,
             name: user.name,
             email: user.email,
             role: user.role,
             token: generateToken(user._id, user.role)
-        } 
-    });
-};
-
-exports.verifyOtp = async (req, res) => {
-    const { email, otp } = req.body;
-    const otpRecord = await OTP.findOne({ email, otp, action: 'account-verification' });
-
-    if (!otpRecord) {
-        return res.status(400).json({ error: "Invalid OTP" });
+        });
+    } catch (error) {
+        console.error("OTP verification error:", error);
+        res.status(500).json({ error: "Internal server error" });
     }
-
-    const user = await User.findOneAndUpdate(
-        { email },
-        { isVerified: true },
-        { new: true }
-    );
-    if (!user) {
-        return res.status(404).json({ error: "User not found" });
-    }
-    await OTP.deleteMany({ email, action: 'account-verification' }); // Delete the OTP after successful verification
-    res.json({
-        message: 'Account verified successfully',
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        token: generateToken(user._id, user.role) 
-    });
 }

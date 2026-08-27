@@ -13,6 +13,7 @@ const bookingRoutes = require("./routes/booking");
 const app = express();
 app.use(cors());
 app.use(express.json()); // Middleware to parse JSON request bodies
+app.use(express.urlencoded({ extended: true }));
 
 //Routes
 app.use('/api/auth', authRoutes);
