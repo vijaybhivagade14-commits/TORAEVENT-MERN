@@ -29,7 +29,7 @@ category: {
 
         required: true,
     },
-    price: {
+    ticketPrice: {
         type: Number,
         required: true,
     },

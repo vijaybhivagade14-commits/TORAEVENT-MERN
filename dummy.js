@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
-const Event = require('./models/Event');
+const Event = require('./models/Events');
 const Booking = require('./models/Booking');
 
 dotenv.config();
@@ -131,10 +131,10 @@ const seedDatabase = async () => {
                 const statuses = ['pending', 'confirmed', 'cancelled'];
                 const status = statuses[Math.floor(Math.random() * statuses.length)];
 
-                let paymentStatus = 'not_paid';
+                let paymentStatus = 'non_paid';
                 if (status === 'confirmed' && event.ticketPrice > 0) {
                     // Usually confirmed tickets are marked paid (90% of the time)
-                    paymentStatus = Math.random() > 0.1 ? 'paid' : 'not_paid';
+                    paymentStatus = Math.random() > 0.1 ? 'paid' : 'non_paid';
                 } else if (event.ticketPrice === 0) {
                     paymentStatus = 'paid';
                 }
@@ -142,6 +142,7 @@ const seedDatabase = async () => {
                 bookingsData.push({
                     userId: user._id,
                     eventId: event._id,
+                    numberOfTickets: 1,
                     status: status,
                     paymentStatus: paymentStatus,
                     amount: event.ticketPrice
