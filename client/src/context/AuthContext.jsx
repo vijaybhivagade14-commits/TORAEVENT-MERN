@@ -1,17 +1,16 @@
-import React from "react";
-import { Children } from "react";
-export const AuthContext = React.createContext();
+import React, { createContext, useState, useEffect } from 'react';
+import api from '../utils/axios';
 
-export const AuthProvider = ({ Children }) => {
+export const AuthContext = createContext();
 
-    const [user, setUser] = React.useState(null);
-    const [loading, setLoading] = React.useState(true);
+export const AuthProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    React.useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
+    useEffect(() => {
+        const userInfo = localStorage.getItem('userInfo');
+        if (userInfo) {
+            setUser(JSON.parse(userInfo));
         }
         setLoading(false);
     }, []);
@@ -20,52 +19,45 @@ export const AuthProvider = ({ Children }) => {
         try {
             const { data } = await api.post('/auth/login', { email, password });
             setUser(data);
-            localStorage.setItem('user', JSON.stringify(data));
+            localStorage.setItem('userInfo', JSON.stringify(data));
             localStorage.setItem('token', data.token);
             return data;
-
+        } catch (error) {
+            if (error.response?.data?.needsVerification) throw error.response.data;
+            throw error.response?.data?.message || 'Login failed';
         }
-        catch (err) {
-            console.error("Login failed:", err);
-            throw err;
-        }
+    };
 
-        const register = async (name, email, password) => {
-            try{
-                const {data} = await api.post('/auth/register', {name, email, password });
-                setUser(data);
-                return data;
-            }
-            catch(err){
-                console.error("Registration failed:", err);
-                throw err;
-            }
+    const register = async (name, email, password) => {
+        try {
+            const { data } = await api.post('/auth/register', { name, email, password });
+            return data; // Returns { message, email }
+        } catch (error) {
+            throw error.response?.data?.message || 'Registration failed';
         }
-    
-        const verifyOtp = async () => {
-            try{
-                const {data} = await api.post('auth/verify-otp');
-                setUser(data);
-                localStorage.setItem("user",JSON.stringify(data));
-                localStorage.setItem("token", data.token);
-                return data;
-            }
-            catch(err){
-                console.error("OTP verification failed:", err);
-            }
+    };
+
+    const verifyOTP = async (email, otp) => {
+        try {
+            const { data } = await api.post('/auth/verify-otp', { email, otp });
+            setUser(data);
+            localStorage.setItem('userInfo', JSON.stringify(data));
+            localStorage.setItem('token', data.token);
+            return data;
+        } catch (error) {
+            throw error.response?.data?.message || 'OTP verification failed';
         }
+    };
 
-        const logout = () => {
-            setUser(null);
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-        };
-    }
+    const logout = () => {
+        setUser(null);
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('token');
+    };
 
-        return (
-            <AuthContext.Provider value={{ user, loading, login, logout, verifyOtp, register }}>
-                {Children}
-            </AuthContext.Provider>
-        
-        );
+    return (
+        <AuthContext.Provider value={{ user, login, register, verifyOTP, logout, loading }}>
+            {!loading && children}
+        </AuthContext.Provider>
+    );
 };
