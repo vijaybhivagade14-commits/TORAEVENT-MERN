@@ -33,8 +33,9 @@ exports.bookEvent = async (req, res) => {
     }
 
     const existingBooking = await Booking.create({
-        user: req.user._id,
-        event: eventId,
+        userId: req.user._id,
+        eventId: eventId,
+        numberOfTickets: 1,
         status: 'pending',
         paymentStatus: 'non_paid',
         amount: event.ticketPrice
