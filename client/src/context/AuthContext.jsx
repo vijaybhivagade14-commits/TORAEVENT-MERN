@@ -18,10 +18,11 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         try {
             const { data } = await api.post('/auth/login', { email, password });
-            setUser(data);
-            localStorage.setItem('userInfo', JSON.stringify(data));
-            localStorage.setItem('token', data.token);
-            return data;
+            // console.log("LOGIN RESPONSE:", JSON.stringify(data, null, 2));
+            setUser(data.user);
+            localStorage.setItem('userInfo', JSON.stringify(data.user));
+            localStorage.setItem('token', data.user.token);
+            return data.user;
         } catch (error) {
             if (error.response?.data?.needsVerification) throw error.response.data;
             throw error.response?.data?.message || 'Login failed';
@@ -40,10 +41,11 @@ export const AuthProvider = ({ children }) => {
     const verifyOTP = async (email, otp) => {
         try {
             const { data } = await api.post('/auth/verify-otp', { email, otp });
-            setUser(data);
-            localStorage.setItem('userInfo', JSON.stringify(data));
-            localStorage.setItem('token', data.token);
-            return data;
+            const { message, ...user } = data;
+            setUser(user);
+            localStorage.setItem('userInfo', JSON.stringify(user));
+            localStorage.setItem('token', user.token);
+            return user;
         } catch (error) {
             throw error.response?.data?.message || 'OTP verification failed';
         }
