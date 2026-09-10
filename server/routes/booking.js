@@ -15,7 +15,7 @@ router.post('/send-otp', protect, sendBookingOtp);
 router.get("/my", protect, getMyBookings);
 
 //Confirm Booking (Admin only)
-router.put("/:id", protect, admin, confirmBooking);
+router.put("/:id/confirm", protect, admin, confirmBooking);
 
 //Cancel Booking (Booking owner)
 router.delete("/:id", protect, cancelBooking);
