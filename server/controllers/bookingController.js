@@ -9,9 +9,9 @@ const generateOtp = () => {
 
 exports.sendBookingOtp = async (req, res) => {
     const opt = generateOtp();
-    await Otp.findOneAndDelete({ email: req.body.email, action: 'event-booking' }); // Delete any existing OTPs for this email and action
-    await Otp.create({ email: req.body.email, otp: opt, action: 'event-booking' });
-    await sendOtpEmail(req.body.email, opt, 'event-booking'); // Send OTP email to the user
+    await Otp.findOneAndDelete({ email: req.user.email, action: 'event-booking' }); // Delete any existing OTPs for this email and action
+    await Otp.create({ email: req.user.email, otp: opt, action: 'event-booking' });
+    await sendOtpEmail(req.user.email, opt, 'event-booking'); // Send OTP email to the user
     res.status(200).json({ message: "OTP sent to email for booking confirmation." });
 };
 

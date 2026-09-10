@@ -35,22 +35,21 @@ exports.getEventById = async (req, res) => {
 
 exports.createEvent = async (req, res) => {
     
-    const { title, description, date, time, location, category, totalSeats, ticketPrice, imageUrl } = req.body;
+    const { title, description, date, location, category, totalSeats, ticketPrice, image } = req.body;
 
     try {
-        const event = await Event.create(req.params.id, {
-
+        const event = await Event.create({
             title,
             description,
             date,
-            time,
             location,
             category,
             totalSeats,
+            availableSeats: totalSeats,
             ticketPrice,
-            imageUrl,
+            image,
             createdBy: req.user._id
-        } )
+        });
         res.status(201).json(event);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -61,19 +60,18 @@ exports.createEvent = async (req, res) => {
 
 
 exports.updateEvent = async (req, res) => {
-    const { title, description, date, time, location, category, totalSeats, ticketPrice, imageUrl } = req.body;
+    const { title, description, date, location, category, totalSeats, ticketPrice, image } = req.body;
 
     try {
         const event = await Event.findByIdAndUpdate(req.params.id, {
             title,
             description,
             date,
-            time,
             location,
             category,
             totalSeats,
             ticketPrice,
-            imageUrl
+            image
         }, { new: true, runValidators: true });
 
         if (!event) {
