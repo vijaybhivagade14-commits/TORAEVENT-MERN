@@ -114,3 +114,13 @@ exports.cancelBooking = async (req, res) => {
     res.json({ message: 'Booking cancelled' });
 };
 
+exports.getAllBookings = async (req, res) => {
+    try {
+        const bookings = await Booking.find().populate('eventId', 'title date location ticketPrice availableSeats totalSeats')
+            .populate('userId', 'name email')
+            .sort({ createdAt: -1 });
+        res.json(bookings);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching all bookings' });
+    }
+};
